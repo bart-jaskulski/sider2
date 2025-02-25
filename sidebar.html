@@ -8,45 +8,112 @@
 </head>
 <body>
   <div class="container">
-    <div class="header">
-      <h1>Gemini Flash Chat</h1>
-      <div class="persona-selector">
-        <label for="persona-select">Persona:</label>
-        <select id="persona-select">
-          <option value="default">Default Assistant</option>
-          <option value="researcher">Academic Researcher</option>
-          <option value="creative">Creative Writer</option>
-          <option value="programmer">Programmer</option>
-          <option value="custom">Custom</option>
-        </select>
-      </div>
-      <div class="settings">
-        <button id="settings-btn" title="Settings">⚙️</button>
+    <!-- Navigation Bar -->
+    <div class="nav-bar">
+      <div class="nav-logo">Gemini Flash</div>
+      <div class="nav-actions">
+        <button class="nav-btn" id="history-nav-btn" title="History">📜</button>
+        <button class="nav-btn" id="settings-nav-btn" title="Settings">⚙️</button>
       </div>
     </div>
 
-    <div id="settings-panel" class="hidden">
-      <div class="setting-group">
-        <label for="temperature">Temperature:</label>
-        <input type="range" id="temperature" min="0" max="1" step="0.1" value="0.7">
-        <span id="temp-value">0.7</span>
-      </div>
-      <div class="setting-group">
-        <label for="system-prompt">System Prompt:</label>
-        <textarea id="system-prompt" rows="4" placeholder="Enter custom system prompt here..."></textarea>
-      </div>
-      <div class="setting-group">
-        <label for="api-key">API Key:</label>
-        <input type="password" id="api-key" placeholder="Enter your Gemini API key">
-      </div>
-      <button id="save-settings">Save Settings</button>
-    </div>
+    <!-- Pages Container -->
+    <div class="pages-container">
+      <!-- Chat Page -->
+      <div class="page active" id="chat-page">
+        <div class="header">
+          <div class="persona-selector">
+            <label for="persona-select">Persona:</label>
+            <select id="persona-select">
+              <option value="default">Default Assistant</option>
+              <option value="researcher">Academic Researcher</option>
+              <option value="creative">Creative Writer</option>
+              <option value="programmer">Programmer</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+        </div>
 
-    <div class="chat-container">
-      <div id="messages">
-        <div class="message system">
-          <div class="message-content">
-            <p>Welcome! I'll assist you with information about this page</p>
+        <div class="chat-container">
+          <div id="messages">
+            <div class="message system">
+              <div class="message-content">
+                <p>Welcome! I'll assist you with information about this page</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="input-container">
+            <button id="extract-btn">Extract Page Content</button>
+            <textarea id="user-input" placeholder="Ask about this page..." rows="3"></textarea>
+            <button id="send-btn" disabled>Send</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Page -->
+      <div class="page" id="settings-page">
+        <div class="page-header">
+          <button class="back-btn" id="settings-back-btn">←</button>
+          <h2>Settings</h2>
+        </div>
+        <div class="page-content">
+          <div class="setting-group">
+            <h3>API Configuration</h3>
+            <label for="api-key">API Key:</label>
+            <input type="password" id="api-key" placeholder="Enter your Gemini API key">
+          </div>
+
+          <div class="setting-group">
+            <h3>Generation Settings</h3>
+            <label for="temperature">Temperature: <span id="temp-value">0.7</span></label>
+            <input type="range" id="temperature" min="0" max="1" step="0.1" value="0.7">
+          </div>
+
+          <div class="setting-group">
+            <h3>Personas</h3>
+            <div id="personas-list">
+              <!-- Persona items will be dynamically added here -->
+            </div>
+            
+            <div class="persona-edit">
+              <h4>Edit Selected Persona</h4>
+              <label for="persona-name">Name:</label>
+              <input type="text" id="persona-name" placeholder="Persona name">
+              
+              <label for="system-prompt">System Prompt:</label>
+              <textarea id="system-prompt" rows="4" placeholder="Enter custom system prompt here..."></textarea>
+              
+              <div class="button-group">
+                <button id="save-persona-btn">Save Persona</button>
+                <button id="reset-persona-btn">Reset to Default</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="setting-group">
+            <h3>Data Management</h3>
+            <div class="button-group">
+              <button id="clear-history-btn">Clear Chat History</button>
+              <button id="export-data-btn">Export Data</button>
+              <button id="import-data-btn">Import Data</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- History Page -->
+      <div class="page" id="history-page">
+        <div class="page-header">
+          <button class="back-btn" id="history-back-btn">←</button>
+          <h2>Chat History</h2>
+          <div class="search-container">
+            <input type="text" id="history-search" placeholder="Search...">
+          </div>
+        </div>
+        <div class="page-content">
+          <div id="history-list">
+            <!-- History items will be added here dynamically -->
           </div>
         </div>
       </div>
@@ -54,10 +121,10 @@
   </div>
 
   <!-- External Libraries (to be vendored) -->
-  <script src="Readability.js"></script>
-  <script src="turndown.js"></script>
+  <script src="Readability.js" type="text/javascript"></script>
+  <script src="turndown.js" type="text/javascript"></script>
   
-  <!-- Main script -->
-  <script src="sidebar.js"></script>
+  <!-- Main scripts as ES modules -->
+  <script type="module" src="modules/main.js"></script>
 </body>
 </html>

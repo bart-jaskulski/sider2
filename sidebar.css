@@ -1,4 +1,4 @@
-/* Sidebar Styles */
+/* Sidebar Styles - Updated version with routing */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -388,4 +388,25 @@ button {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+}
+
+/* Animation for page transitions */
+.page {
+  transition: transform 0.3s ease;
+  transform: translateX(100%);
+}
+
+.page.active {
+  transform: translateX(0);
+}
+
+/* Styling for empty states */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #757575;
+}
+
+.empty-state p {
+  margin-top: 12px;
 }
