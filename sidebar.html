@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gemini Flash Sidebar</title>
+  <link rel="stylesheet" href="sidebar.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Gemini Flash Chat</h1>
+      <div class="persona-selector">
+        <label for="persona-select">Persona:</label>
+        <select id="persona-select">
+          <option value="default">Default Assistant</option>
+          <option value="researcher">Academic Researcher</option>
+          <option value="creative">Creative Writer</option>
+          <option value="programmer">Programmer</option>
+          <option value="custom">Custom</option>
+        </select>
+      </div>
+      <div class="settings">
+        <button id="settings-btn" title="Settings">⚙️</button>
+      </div>
+    </div>
+
+    <div id="settings-panel" class="hidden">
+      <div class="setting-group">
+        <label for="temperature">Temperature:</label>
+        <input type="range" id="temperature" min="0" max="1" step="0.1" value="0.7">
+        <span id="temp-value">0.7</span>
+      </div>
+      <div class="setting-group">
+        <label for="system-prompt">System Prompt:</label>
+        <textarea id="system-prompt" rows="4" placeholder="Enter custom system prompt here..."></textarea>
+      </div>
+      <div class="setting-group">
+        <label for="api-key">API Key:</label>
+        <input type="password" id="api-key" placeholder="Enter your Gemini API key">
+      </div>
+      <button id="save-settings">Save Settings</button>
+    </div>
+
+    <div class="chat-container">
+      <div id="messages">
+        <div class="message system">
+          <div class="message-content">
+            <p>Welcome! I'll assist you with information about this page. Click the button below to analyze the current webpage.</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="input-container">
+        <button id="extract-btn">Analyze Current Page</button>
+        <textarea id="user-input" placeholder="Type your message here..." rows="2"></textarea>
+        <button id="send-btn" disabled>Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- External Libraries (to be vendored) -->
+  <script src="Readability.js"></script>
+  <script src="turndown.js"></script>
+  
+  <!-- Main script -->
+  <script src="sidebar.js"></script>
+</body>
+</html>

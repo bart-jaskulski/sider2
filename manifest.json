@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Gemini Flash Sidebar",
+  "version": "1.0",
+  "description": "Chat with Gemini Flash about the current webpage in a sidebar",
+  "permissions": [
+    "sidePanel",
+    "scripting",
+    "activeTab",
+    "storage",
+    "unlimitedStorage"
+  ],
+  "host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
+  "action": {
+    "default_title": "Open Gemini Flash Sidebar"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "side_panel": {
+    "default_path": "sidebar.html"
+  }
+}
