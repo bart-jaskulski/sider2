@@ -216,4 +216,59 @@ export function exportHistory() {
  */
 export function importHistory(jsonData) {
   try {
-    const importedHistory = JSON.
+    const importedHistory = JSON.parse(jsonData);
+    
+    if (!Array.isArray(importedHistory)) {
+      throw new Error('Invalid history data format');
+    }
+    
+    // Validate each history item has required fields
+    importedHistory.forEach(item => {
+      if (!item.id || !item.title || !item.timestamp) {
+        throw new Error('Invalid history item format');
+      }
+    });
+    
+    // Save the imported history
+    saveHistory(importedHistory);
+    return true;
+  } catch (error) {
+    console.error('Error importing history:', error);
+    return false;
+  }
+}
+
+/**
+ * Get a single chat session by ID
+ * @param {string} sessionId - The ID of the session to get
+ * @returns {object|null} The session object or null if not found
+ */
+export function getChatSession(sessionId) {
+  const history = getAllHistory();
+  return history.find(session => session.id === sessionId) || null;
+}
+
+/**
+ * Sort history by given criteria
+ * @param {Array} history - The history array to sort
+ * @param {string} sortBy - Sort criteria (timestamp, title)
+ * @param {boolean} ascending - Sort direction
+ * @returns {Array} Sorted history array
+ */
+export function sortHistory(history, sortBy = 'timestamp', ascending = false) {
+  const sortedHistory = [...history];
+  
+  sortedHistory.sort((a, b) => {
+    let comparison = 0;
+    
+    if (sortBy === 'timestamp') {
+      comparison = a.timestamp - b.timestamp;
+    } else if (sortBy === 'title') {
+      comparison = a.title.localeCompare(b.title);
+    }
+    
+    return ascending ? comparison : -comparison;
+  });
+  
+  return sortedHistory;
+}
