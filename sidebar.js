@@ -49,13 +49,7 @@ let settings = {
 async function initSidebar() {
   // Load saved settings
   loadSettings();
-  
-  // Get current tab ID
-  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (tabs[0]) {
-    currentTabId = tabs[0].id;
-  }
-  
+
   // Set up event listeners
   setupEventListeners();
 }
@@ -65,23 +59,30 @@ function loadSettings() {
   chrome.storage.local.get('geminiFlashSettings', (result) => {
     if (result.geminiFlashSettings) {
       settings = { ...settings, ...result.geminiFlashSettings };
-      
+
       // Update UI to reflect loaded settings
       apiKeyInput.value = settings.apiKey || '';
       temperatureSlider.value = settings.temperature;
       tempValue.textContent = settings.temperature;
       personaSelect.value = settings.currentPersona;
-      
+
       // Update system prompt based on selected persona
       const persona = settings.personas[settings.currentPersona];
       systemPromptInput.value = persona.systemPrompt;
-      
-      // Enable the send button if API key is set
-      if (settings.apiKey) {
-        sendButton.disabled = false;
-      }
+
+      // Enable the send button if API key is set and page content exists
+      updateSendButtonState();
     }
   });
+}
+
+// Update send button state based on current conditions
+function updateSendButtonState() {
+  if (userInput.value.trim() && settings.apiKey && pageContent) {
+    sendButton.disabled = false;
+  } else {
+    sendButton.disabled = true;
+  }
 }
 
 // Save settings to storage
@@ -90,38 +91,29 @@ function saveSettings() {
   settings.apiKey = apiKeyInput.value;
   settings.temperature = parseFloat(temperatureSlider.value);
   settings.currentPersona = personaSelect.value;
-  
+
   // Update custom system prompt if selected
   if (personaSelect.value === 'custom') {
     settings.personas.custom.systemPrompt = systemPromptInput.value;
   }
-  
+
   // Save to storage
   chrome.storage.local.set({ 'geminiFlashSettings': settings });
-  
-  // Enable send button if API key is set
-  if (settings.apiKey) {
-    sendButton.disabled = false;
-  } else {
-    sendButton.disabled = true;
-  }
-  
+
+  // Update send button state
+  updateSendButtonState();
+
   // Hide settings panel
   settingsPanel.classList.add('hidden');
 }
 
 // Set up event listeners
 function setupEventListeners() {
-  // Extract button
-  extractButton.addEventListener('click', () => {
-    extractPageContent();
-  });
-  
   // Send button
   sendButton.addEventListener('click', () => {
     sendMessage();
   });
-  
+
   // Enter key in input
   userInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -129,35 +121,31 @@ function setupEventListeners() {
       sendMessage();
     }
   });
-  
+
   // Input field changes
   userInput.addEventListener('input', () => {
-    if (userInput.value.trim() && settings.apiKey && pageContent) {
-      sendButton.disabled = false;
-    } else {
-      sendButton.disabled = true;
-    }
+    updateSendButtonState();
   });
-  
+
   // Settings button
   settingsButton.addEventListener('click', () => {
     settingsPanel.classList.toggle('hidden');
   });
-  
+
   // Save settings button
   saveSettingsButton.addEventListener('click', saveSettings);
-  
+
   // Temperature slider
   temperatureSlider.addEventListener('input', () => {
     tempValue.textContent = temperatureSlider.value;
   });
-  
+
   // Persona select
   personaSelect.addEventListener('change', () => {
     const selectedPersona = personaSelect.value;
     const persona = settings.personas[selectedPersona];
     systemPromptInput.value = persona.systemPrompt;
-    
+
     // Enable/disable system prompt based on selection
     if (selectedPersona === 'custom') {
       systemPromptInput.disabled = false;
@@ -165,49 +153,42 @@ function setupEventListeners() {
       systemPromptInput.disabled = true;
     }
   });
-  
-  // Listen for messages from content script
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    console.log(message);
-    if (message.action === 'pageContentExtracted') {
-      handleExtractedContent(message.data);
-    } else if (message.action === 'extractionError') {
-      showMessage('system', `Error extracting content: ${message.error}`);
-    }
-  });
-}
 
-// Extract page content
-function extractPageContent() {
-  if (!currentTabId) {
-    showMessage('system', 'Unable to determine current tab. Please try refreshing the page.');
-    return;
-  }
-  
-  showMessage('system', 'Analyzing current webpage...');
-  
-  chrome.runtime.sendMessage({
-    action: 'getPageContent',
-    tabId: currentTabId
+  chrome.storage.session.get('pageContent', ({ pageContent }) => {
+    handleExtractedContent(pageContent);
+  });
+
+  chrome.storage.session.onChanged.addListener((changes) => {
+    const pageContent = changes['pageContent'];
+    handleExtractedContent(pageContent);
   });
 }
 
 // Handle extracted content
-function handleExtractedContent(content) {
-  pageContent = content;
-  
+function handleExtractedContent(newContent) {
+  if (pageContent == newContent) {
+    // no new content, do nothing
+    return;
+  }
+
+  pageContent = newContent;
+
   // Convert HTML to markdown using TurndownService
-  const turndownService = new TurndownService();
-  const markdown = turndownService.turndown(content.content);
-  
-  // Store the markdown version
-  pageContent.markdown = markdown;
-  
-  showMessage('system', `Successfully analyzed: "${content.title}"`);
-  
-  // Enable send button if input has text and API key is set
-  if (userInput.value.trim() && settings.apiKey) {
-    sendButton.disabled = false;
+  try {
+    const turndownService = new TurndownService();
+    const markdown = turndownService.turndown(newContent.content);
+
+    // Store the markdown version
+    pageContent.markdown = markdown;
+
+    showMessage('system', `Successfully analyzed: "${newContent.title}"`);
+    console.log(pageContent);
+
+    // Update send button state
+    updateSendButtonState();
+  } catch (error) {
+    console.error("Error converting to markdown:", error);
+    showMessage('system', `Error processing page content: ${error.message}`);
   }
 }
 
@@ -215,22 +196,22 @@ function handleExtractedContent(content) {
 async function sendMessage() {
   const userMessage = userInput.value.trim();
   if (!userMessage || !settings.apiKey || !pageContent) return;
-  
+
   // Add user message to chat
   showMessage('user', userMessage);
-  
+
   // Clear input field
   userInput.value = '';
   sendButton.disabled = true;
-  
+
   // Show typing indicator
   const typingIndicator = showMessage('assistant', '...');
-  
+
   try {
     // Prepare the request payload
     const selectedPersona = settings.currentPersona;
     const persona = settings.personas[selectedPersona];
-    
+
     const payload = {
       contents: [
         {
@@ -256,7 +237,7 @@ User question: ${userMessage}`
         temperature: settings.temperature
       }
     };
-    
+
     // Make API request to Gemini Flash
     const response = await fetch('https://generativelanguage.googleapis.com/v1/models/gemini-flash:generateContent?key=' + settings.apiKey, {
       method: 'POST',
@@ -265,21 +246,21 @@ User question: ${userMessage}`
       },
       body: JSON.stringify(payload)
     });
-    
+
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.error?.message || 'Unknown API error');
     }
-    
+
     const responseData = await response.json();
-    
+
     // Remove typing indicator and show actual response
     typingIndicator.remove();
-    
+
     // Extract and display the response text
     const assistantMessage = responseData.candidates[0]?.content?.parts[0]?.text || 'No response received';
     showMessage('assistant', assistantMessage);
-    
+
   } catch (error) {
     // Remove typing indicator and show error
     typingIndicator.remove();
@@ -291,32 +272,32 @@ User question: ${userMessage}`
 function showMessage(role, content) {
   const messageDiv = document.createElement('div');
   messageDiv.className = `message ${role}`;
-  
+
   const messageContent = document.createElement('div');
   messageContent.className = 'message-content';
-  
+
   // Handle markdown in assistant messages
   if (role === 'assistant') {
     // Simple markdown parsing for basic formatting
     // For a real extension, consider using a proper markdown library
     const formattedContent = content
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/`(.*?)`/g, '<code>$1</code>')
-      .replace(/\n\n/g, '</p><p>')
-      .replace(/\n/g, '<br>');
-    
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/`(.*?)`/g, '<code>$1</code>')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br>');
+
     messageContent.innerHTML = `<p>${formattedContent}</p>`;
   } else {
     messageContent.textContent = content;
   }
-  
+
   messageDiv.appendChild(messageContent);
   messagesContainer.appendChild(messageDiv);
-  
+
   // Scroll to bottom
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
-  
+
   return messageDiv;
 }
 

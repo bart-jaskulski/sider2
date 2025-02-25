@@ -1,26 +1,31 @@
 {
   "manifest_version": 3,
-  "name": "Gemini Flash Sidebar",
+  "name": "Gemini Flash",
   "version": "1.0",
-  "description": "Chat with Gemini Flash about the current webpage in a sidebar",
+  "description": "A Chrome Extension with Gemini AI in the side panel",
   "permissions": [
     "sidePanel",
     "scripting",
-    "activeTab",
     "storage",
-    "unlimitedStorage"
+    "activeTab"
   ],
   "host_permissions": [
     "https://*/*",
     "http://*/*"
   ],
-  "action": {
-    "default_title": "Open Gemini Flash Sidebar"
-  },
   "background": {
     "service_worker": "background.js"
   },
   "side_panel": {
     "default_path": "sidebar.html"
-  }
+  },
+  "action": {
+    "default_title": "Open Gemini Flash"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["sidebar.html", "sidebar.css", "sidebar.js", "Readability.js", "turndown.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }

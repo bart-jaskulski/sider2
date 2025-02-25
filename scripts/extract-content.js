@@ -2772,7 +2772,8 @@ function extractPageContent(document) {
       siteName: article.siteName || document.domain
     };
   } catch (error) {
-    throw error;
+    console.error("Error extracting content:", error);
+    return { error: error.message };
   }
 }
 
