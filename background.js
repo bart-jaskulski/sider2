@@ -11,7 +11,7 @@ chrome.tabs.onUpdated.addListener(async (tabId) => {
 
 async function showSummary(tabId) {
   const tab = await chrome.tabs.get(tabId);
-  if ( !tab || !tab.url.startsWith('http')) {
+  if ( ! ('url' in tab) ) {
     return;
   }
   const injection = await chrome.scripting.executeScript({

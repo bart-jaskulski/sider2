@@ -26,6 +26,9 @@ export function initHistoryPage() {
   // Set up event listeners
   searchInput.addEventListener('input', handleSearchInput);
   
+  // Listen for chat session load events from other parts of the app
+  document.addEventListener('loadChatSession', handleLoadChatSession);
+  
   // Initial render
   renderHistoryList();
 }
@@ -205,4 +208,25 @@ function loadChatSession(sessionId) {
   document.dispatchEvent(event);
   
   // Navigate to chat page
-  navigat
+  navigateTo('chat');
+}
+
+/**
+ * Handle chat session load event
+ * @param {CustomEvent} event - The loadChatSession event
+ */
+function handleLoadChatSession(event) {
+  const session = event.detail;
+  console.log('Loading chat session:', session.id);
+  
+  // This is handled by the chat page but we can add any history-specific logic here
+  // For example, we might want to highlight the last viewed session in the history list
+}
+
+/**
+ * Public method to refresh the history list
+ * Can be called from other modules when history is updated
+ */
+export function refreshHistory() {
+  renderHistoryList();
+}
