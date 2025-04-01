@@ -1,4 +1,3 @@
-// Chat page implementation
 import { marked } from "../../marked.js";
 import { 
   addChatSession, 
@@ -6,12 +5,14 @@ import {
   getChatSession 
 } from '../services/historyService.js';
 import { loadSettings, settings } from '../services/settingsService.js';
+import { base64EncodeUnicode } from '../../util/encode.js';
 
 // DOM Elements
 let messagesContainer;
 let userInput;
 let sendButton;
-let extractButton;
+let includeContentToggle;
+let newChatButton;
 let personaSelect;
 
 // Current chat session
@@ -30,12 +31,14 @@ export function initChatPage() {
   messagesContainer = document.getElementById('messages');
   userInput = document.getElementById('user-input');
   sendButton = document.getElementById('send-btn');
-  extractButton = document.getElementById('extract-btn');
+  includeContentToggle = document.getElementById('include-content-toggle');
+  newChatButton = document.getElementById('new-chat-btn');
   personaSelect = document.getElementById('persona-select');
   
   // Set up event listeners
   sendButton.addEventListener('click', sendMessage);
-  extractButton.addEventListener('click', extractPageContent);
+  newChatButton.addEventListener('click', startNewSession);
+  includeContentToggle.addEventListener('change', handleContentToggle);
   userInput.addEventListener('input', handleInputChange);
   personaSelect.addEventListener('change', handlePersonaChange);
   
@@ -85,6 +88,9 @@ function startNewSession() {
   // Reset input
   userInput.value = '';
   sendButton.disabled = true;
+  
+  // Save the new session to history
+  saveChatSession();
 }
 
 /**
@@ -183,36 +189,40 @@ function sendMessage() {
 }
 
 /**
- * Extract page content from current tab
+ * Handle content toggle change
  */
-function extractPageContent() {
-  // This would normally use chrome.tabs to get active tab content
-  // For simulation, let's just create a sample pageInfo
-  
-  // In a real extension, you'd inject a script like:
-  chrome.storage.session.get('pageContent', ({ pageContent }) => {
-    processExtractedContent(pageContent);
-  });
-
-  chrome.storage.session.onChanged.addListener((changes) => {
-    const pageContent = changes['pageContent'];
-    processExtractedContent(pageContent.newValue);
-  });
-}
-
-/**
- * Process extracted content from page
- * @param {object} pageInfo - Information about the page
- */
-function processExtractedContent(pageInfo) {
-  // Store page info in current session
-  currentSession.pageInfo = pageInfo;
-  
-  // Add system message about extraction
-  addSystemMessage(`Content extracted from: ${pageInfo.title}`);
-  
-  // Save to history
-  saveChatSession();
+function handleContentToggle() {
+  if (includeContentToggle.checked) {
+    // Get page content when toggle is turned on
+    chrome.storage.session.get('pageContent', ({ pageContent }) => {
+      if (pageContent) {
+        // Store page info in current session
+        currentSession.pageInfo = pageContent;
+        
+        // Add system message about inclusion
+        addSystemMessage(`Page content will be included: ${pageContent.title}`);
+        
+        // Save to history
+        saveChatSession();
+      } else {
+        const message = 'No page content available. Please refresh the page.';
+        addSystemMessage(message);
+        
+        // Save to history
+        saveChatSession();
+      }
+    });
+  } else {
+    // Remove page content when toggle is turned off
+    currentSession.pageInfo = null;
+    
+    const message = 'Page content will not be included in the conversation.';
+    // Add system message about exclusion
+    addSystemMessage(message);
+    
+    // Save to history
+    saveChatSession();
+  }
 }
 
 /**
@@ -228,8 +238,6 @@ async function getAIResponse(message) {
   scrollToBottom();
   
   try {
-    // Here you would normally call the Gemini API
-    // For simulation, we'll use a timeout to simulate API latency
     const apiKey = settings.apiKey;
 
     if (!apiKey || apiKey === '') {
@@ -258,7 +266,9 @@ async function getAIResponse(message) {
       },
       body: JSON.stringify({
         contents: [
-          ...(currentSession.pageInfo ? [{ role: "user", parts: [{ text: `${currentSession.pageInfo.title}\n\n${currentSession.pageInfo.url}\n\n${TurndownService().turndown(currentSession.pageInfo.content)}` }] }] : []),
+          ...(currentSession.pageInfo
+            ? [{ role: 'user', parts: [{ inlineData: {data: base64EncodeUnicode(`${currentSession.pageInfo.title}\n\n${currentSession.pageInfo.url}\n\n${TurndownService().turndown(currentSession.pageInfo.content)}`), mimeType: 'text/md'} }] }]
+            : []),
           ...formattedMessages,
         ],
         systemInstruction: {
@@ -339,8 +349,9 @@ function saveChatSession() {
 /**
  * Add a system message to the UI
  * @param {string} content - The message content
+ * @param {boolean} saveToSession - Whether to save this message to the session
  */
-function addSystemMessage(content) {
+function addSystemMessage(content, saveToSession = false) {
   const messageElement = document.createElement('div');
   messageElement.className = 'message system';
   messageElement.innerHTML = `
@@ -350,6 +361,15 @@ function addSystemMessage(content) {
   `;
   messagesContainer.appendChild(messageElement);
   scrollToBottom();
+  
+  // Optionally save to session
+  if (saveToSession) {
+    currentSession.messages.push({
+      role: 'system',
+      content: content
+    });
+    saveChatSession();
+  }
 }
 
 /**

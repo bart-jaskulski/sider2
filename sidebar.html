@@ -44,7 +44,13 @@
           </div>
 
           <div class="input-container">
-            <button id="extract-btn">Extract Page Content</button>
+            <div class="button-row">
+              <button id="new-chat-btn">New Chat</button>
+              <div class="toggle-container">
+                <label for="include-content-toggle">Include Page Content</label>
+                <input type="checkbox" id="include-content-toggle">
+              </div>
+            </div>
             <textarea id="user-input" placeholder="Ask about this page..." rows="3"></textarea>
             <button id="send-btn" disabled>Send</button>
           </div>
